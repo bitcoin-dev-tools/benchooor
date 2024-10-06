@@ -40,12 +40,12 @@ prepare_function() {
     echo "Presyncing headers for commit $COMMIT at $(date)" >> "$LOG_FILE"
     # stopatheight=1 ensures we presync the headers , which is required to be able to load an assumeutxo
     # snapshot. after headers sync, we restart and load the snapshot
-    ./build/src/bitcoind -stopatheight=1 -datadir="$DATA_DIR" -dbcache="$DBCACHE" -printtoconsole=0
+    ./build/src/bitcoind -connect=127.0.0.1:8333 -port=8444 -rpcport=8445 -stopatheight=1 -datadir="$DATA_DIR" -dbcache="$DBCACHE" -printtoconsole=0
     echo "Loading UTXO set from $ASSUMEUTXO_SNAPSHOT for commit $COMMIT at $(date)" >> "$LOG_FILE"
-    ./build/src/bitcoind -datadir="$DATA_DIR" -dbcache="$DBCACHE" -daemon && sleep 5
-    ./build/src/bitcoin-cli -datadir="$DATA_DIR" loadtxoutset "$ASSUMEUTXO_SNAPSHOT" >> "$LOG_FILE" 2>&1
+    ./build/src/bitcoind -connect=127.0.0.1:8333 -port=8444 -rpcport=8445 -datadir="$DATA_DIR" -dbcache="$DBCACHE" -daemon && sleep 5
+    ./build/src/bitcoin-cli -rpcport=8445 -rpcclienttimeout=0 -datadir="$DATA_DIR" loadtxoutset "$ASSUMEUTXO_SNAPSHOT" >> "$LOG_FILE" 2>&1
     echo "AssumeUTXO snapshot loaded for commit $COMMIT at $(date)" >> "$LOG_FILE"
-    ./build/src/bitcoin-cli -datadir="$DATA_DIR" stop && sleep 10 
+    ./build/src/bitcoin-cli -rpcport=8445 -datadir="$DATA_DIR" stop && sleep 10 
     popd
   fi
   echo "Finished prepare step for commit $COMMIT at $(date)" >> "$LOG_FILE"
@@ -95,6 +95,10 @@ run_bitcoind_with_monitoring() {
       -printtoconsole=0 \
       -maxmempool=5 \
       -blocksonly \
+      -debug=coindb \
+      -connect=127.0.0.1:8333 \
+      -port=8444 \
+      -rpcport=8445 \
       -pausebackgroundsync
 
   echo "VMSTAT monitoring for commit $COMMIT at $(date)" >> "$LOG_FILE"
